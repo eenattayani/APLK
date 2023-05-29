@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="" />
+    <title>Pengukuran Lingkar Kepala Bayi</title>
+
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      html {
+        background-image: linear-gradient(to right, #eee, #ddd);
+        font-family: Helvetica;
+        display: inline-block;
+        margin: 0px auto;
+        text-align: center;
+      }
+      h2 {
+        margin: 20px 0 10px 0;
+      }
+      h4 {
+        margin: 20px 0 10px 0;
+      }
+      h5 {
+        background-color: #1fd31f;
+        text-align: center;
+        border-bottom: solid black 1px;
+        padding: 10px 0 7px 0;
+        width: 90%;
+        margin: auto;
+        border-radius: 10px 10px 0 0;
+      }
+      .button {
+        border-radius: 8px;
+        background-color: #2c2591;
+        border: none;
+        color: white;
+        padding: 12px 35px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: bold;
+        margin: 10px;
+        cursor: pointer;
+      }
+      .button:hover {
+        background-color: rgb(139, 102, 197);
+        color: black;
+      }
+
+      .button1 {
+        background-color: #ff1111;
+      }
+      .button2 {
+        background-color: #555555;
+      }
+      input {
+        border-radius: 8px;
+        background-color: #eee;
+        width: 20%;
+        padding: 10px;
+        margin: 10px 0 10px 0;
+        text-align: center;
+      }
+      .container {
+        padding: 5px;
+        margin-top: 20px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .container hr {
+        width: 50%;
+        margin: auto;
+      }
+      footer {
+        font-size: 10px;
+        margin-top: 20px;
+      }
+      #lingkaran {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        font-size: large;
+      }
+      h5.hasil {
+        background-color: #4caf50;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>PENGUKURAN LINGKAR KEPALA</h2>
+    <hr />
+
+    <h4>Data Sensor Ultra Sonik</h4>
+
+    <form method="GET" action="">
+      <div class="container">
+        <div class="content">
+          <h5>Sensor Depan</h5>
+          <input type="text" name="sensorF" value="11" />
+        </div>
+        <div class="content">
+          <h5>Sensor Belakang</h5>
+          <input type="text" name="sensorB" value="11,1" />
+        </div>
+        <div class="content">
+          <h5>Sensor Kanan</h5>
+          <input type="text" name="sensorR" value="11,1" />
+        </div>
+        <div class="content">
+          <h5>Sensor Kiri</h5>
+          <input type="text" name="sensorL" value="11" />
+        </div>
+      </div>
+
+      <br />
+      <hr />
+
+      <div class="container">
+        <div class="content">
+          <h5>Diamater Depan Belakang</h5>
+          <input type="text" name="diaFB" value="21" />
+        </div>
+        <div class="content">
+          <h5>Diamater Kanan Kiri</h5>
+          <input type="text" name="diaRL" value="22" />
+        </div>
+        <div class="content">
+          <h5>Diameter Rata-Rata</h5>
+          <input type="text" name="rataDia" value="21,5" />
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="content">
+          <h5 class="hasil">Ukuran Lingkaran Kepala</h5>
+          <input type="text" id="lingkaran" name="lingkaran" value="54" />
+          <br /><button class="button">Ambil Data</button>
+        </div>
+      </div>
+    </form>
+
+    <hr />
+    <footer>
+      <p class="copyright">&copy; 2023</p>
+    </footer>
+  </body>
+</html>
