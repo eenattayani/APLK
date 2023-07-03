@@ -4,7 +4,6 @@
  * Algoritma Lingkaran Ellipse bekerja dengan menghitung dua sumbu utama dari lingkaran ellipse, 
  * yaitu sumbu utama horizontal (a) dan sumbu utama vertikal (b).Sumbu utama ini kemudian digunakan 
  * untuk menghitung nilai lingkar kepala bayi menggunakan rumus sebagai berikut:
- * Lingkar Kepala = π × √(2 × a^2 + 2 × b^2)
  *  
  *  sensor depan    43,5  2580  5   417
  *  sensor belakang 43,5  2479  5   346
