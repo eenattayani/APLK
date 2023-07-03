@@ -1,14 +1,28 @@
 /*  WEB Server for Head Circle counter
- *  
- *  
+ *  (Pengukur Lingkar Kepala Bayi)
+ *    
  * Algoritma Lingkaran Ellipse bekerja dengan menghitung dua sumbu utama dari lingkaran ellipse, 
  * yaitu sumbu utama horizontal (a) dan sumbu utama vertikal (b).Sumbu utama ini kemudian digunakan 
- * untuk menghitung nilai lingkar kepala bayi menggunakan rumus sebagai berikut:
+ * untuk menghitung nilai lingkar kepala bayi.
  *  
+ *  kalibrasi sensor ultrasonic:
  *  sensor depan    43,5  2580  5   417
  *  sensor belakang 43,5  2479  5   346
  *  sensor kanan    43,8  2500  5   296
  *  sesnsor kiri    43,8  2509  5   431
+ *  
+ *  cara pengoperasian Alat Pengukur Lingkar Kepala Bayi:
+ *  - Hubungkan kabel USB power Alat ke Adaptor 5 Volt DC(adaptor charger Smartphone) 
+ *  - Alat akan secara otomatis mendeteksi objek dan mengukur lingkar objek
+ *  - Posisi objek ditekankan berada tepat di tengah-tengah Alat
+ *  - Alat dilengkapi tombol reset untuk melakukan pengukuran ulang
+ *    
+ *  cara membuka aplikasi berbasis web:
+ *  - hubungkan WiFi laptop/smartphone ke WiFi dengan SSID = "wifi-APLKB"
+ *  - masukkan password = "12345678"
+ *  - maka akan terhubung ke WiFi Alat Pengukur Lingkar Kepala Bayi dan tidak memiliki akses internet
+ *  - buka browser(Mozilla Firefox atau Google Chrome) dan masukkan alamat 192.168.4.1
+ *  - maka interface aplikasi akan ditampilkan di browser
  */
 
 #include <vector> 
@@ -52,22 +66,19 @@ const int notes1Length = 5;
 
 int tempo = 70;
 
-
-
 // define sound speed in cm/us
 #define SOUND_SPEED 0.034
 #define CM_TO_INCH 0.393701
 
-const float konstanta = 44.5; // 43.5 & 43.7;
+const float konstanta = 44.5; // 43.5 & 43.8;
 const float midKonstanta = konstanta * 2/3;
 const float phi = 3.14159;
 
 // ukuran kotak = 43.5 cm
-const float kaliF = 0; // 1.8
-const float kaliB = 0; // 1.3
-const float kaliR = 0; // 2
-const float kaliL = 0; // 1.8
-
+const float kaliF = 0; 
+const float kaliB = 0; 
+const float kaliR = 0; 
+const float kaliL = 0; 
 
 float jarakDepan;
 float jarakBelakang;
@@ -83,7 +94,7 @@ bool loopState =  true;
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-// buat karakter
+// buat karakter panah
 byte ArrowUp[8] = {
 0b00000,
 0b00100,
@@ -128,6 +139,9 @@ byte ArrowLeft[8] = {
 0b00000
 };
 
+/*  ========================== *
+ *  ===== Setup Function ===== *
+ *  ========================== */
 void setup() {
   Serial.begin(115200);
 
@@ -159,89 +173,31 @@ void setup() {
   delay(2000);
   lcd.clear();
   
-
   startup_wifi(); 
 }
 
-// function untuk buzzer
-void playTone(int tone, int duration) {
-  for (long i = 0; i < duration * 900L; i += tone * 2) 
-  {
-    digitalWrite(speakerPin, HIGH); 
-    delayMicroseconds(tone);    
-    digitalWrite(speakerPin, LOW);    
-    delayMicroseconds(tone);  
-  }
+
+
+/*  ========================= *
+ *  ===== Program Utama ===== *
+ *  ========================= */
+void loop() {     
+  ms_current = millis();
+  cek_client(); 
+
+  if ( ms_current - ms_previous >= 2000)
+  {      
+    ms_previous = ms_current;
+               
+    tes_ukur();
+  }  
 }
 
-// function untuk buzzer
-void playNote(char note, int duration) {
-  char names[] = { 'c', 'd', 'e', 'f', 'g', 'a', 'b', 'C' };
-  int tones[] = { 1915, 1700, 1519, 1432, 1275, 1136, 1014, 956 };
 
-  for (int i = 0; i < 8; i++) {  
-    if (names[i] == note) {
-     playTone(tones[i], duration);  
-    }
-  }
-}
 
-// function untuk bunyikan buzzer
-void playBuzzer()
-{
-  for (int i = 0; i < notesLength; i++)
-  {
-    if (notes[i] == ' ') {
-      delay(beats[i] * tempo); // rest
-    } else {
-      playNote(notes[i], beats[i] * tempo);
-    }
-    delay(tempo / 2);
-  }
-}
-
-void buzzerScan()
-{
-  tempo = 70;
-  
-  for (int i = 0; i < notesLength; i++) {
-    if (notes[i] == ' ') {
-      delay(beats[i] * tempo); // rest
-    } else {
-      playNote(notes[i], beats[i] * tempo);
-    }
-    delay(tempo / 2);
-  }
-}
-
-void buzzerObject()
-{
-  tempo = 70;
-  
-  for (int i = 0; i < notes1Length; i++) {
-    if (notes1[i] == ' ') {
-      delay(beats1[i] * tempo); // rest
-    } else {
-      playNote(notes1[i], beats1[i] * tempo);
-    }
-    delay(tempo / 2);
-  }
-}
-
-void buzzerScanDone()
-{
-  tempo = 300;
-  
-  for (int i = 0; i < notesLength; i++) {
-    if (notes[i] == ' ') {
-      delay(beats[i] * tempo); // rest
-    } else {
-      playNote(notes[i], beats[i] * tempo);
-    }
-    delay(tempo / 2);
-  }
-}
-
+/*  ======================= *
+ *  == Kumpulan Function == *
+ *  ======================= */
 float tes_ukur()
 {
   jarakDepan = tes_sensor(depanTrig, depanEcho, 0) - 2;   
@@ -253,7 +209,6 @@ float tes_ukur()
   jarakKiri = tes_sensor(kiriTrig, kiriEcho, 3) - 1; 
   delay(100);
 
-  
   //  menampilkan pada terminal
   Serial.print("      ");
   Serial.println(jarakDepan, 1);
@@ -311,7 +266,8 @@ float tes_ukur()
       lcd.write(2);
       lcd.print("      ");
     }
-       
+
+    // pastikan posisi objek berada di posisi tengah,
     // jika 
     // sensor depan & sensor belakang selisih di bawah 2 cm, 
     // sensor kanan & sensor kiri selisih di bawah 2 cm,
@@ -325,14 +281,12 @@ float tes_ukur()
     if ( selFB < 2 && selRL  < 2 )
     { 
       // olah data dari sensor 
-      diaFB = konstanta - ( jarakDepan + jarakBelakang ); // jarak sensor depan ke belakang = 43,21
-      diaRL = konstanta - ( jarakKanan + jarakKiri ); // jarak sensor kanan ke kiri = 43,7
+      diaFB = konstanta - ( jarakDepan + jarakBelakang ); 
+      diaRL = konstanta - ( jarakKanan + jarakKiri ); 
       rataDia = ( diaFB + diaRL ) / 2;
 
-//     Rumus Lingkar Kepala = π × √(2 × a^2 + 2 × b^2)
-//     lingkaran = phi * sqrt( ( 2 * pow(diaFB, 2) + 2 * pow(diaRL, 2) ) );
-
-       lingkaran = phi * rataDia;
+      // rumus lingkaran
+      lingkaran = phi * rataDia;
             
       lcd.clear();
     
@@ -349,7 +303,7 @@ float tes_ukur()
       Serial.println(lingkaran, 1);
       Serial.println("===");
 
-//    tampilkan data ke LCD
+      // tampilkan data ke LCD
       lcd.setCursor(0,0);
       lcd.print("D1:");
       lcd.print(diaFB, 1);
@@ -375,7 +329,6 @@ float tes_ukur()
             if ( loopState == false ) break;
             delay(1);
             counterDelay++;
-//            Serial.print(digitalRead(tombolReset));
          } while( counterDelay <= 200 );
   
           lcd.backlight();
@@ -388,11 +341,9 @@ float tes_ukur()
             if ( loopState == false ) break;            
             delay(1);
             counterDelay++;
-//            Serial.print(digitalRead(tombolReset));
          } while( counterDelay <= 800 );        
          
-         cek_client();
-      
+         cek_client();      
       }      
 
       lcd.clear();
@@ -440,11 +391,7 @@ float tes_sensor(int trig, int echo, int pos)
     duration = pulseIn(echo, HIGH);        
     delay(20);
 
-//  Serial.print("duration ");
-//  Serial.print(posisi[pos]);
-//  Serial.print(" : ");
-//  Serial.println(duration);
-  // Calculate the distance in cm
+
   // jarakCm = duration * SOUND_SPEED/2;
    jarakCm = duration / 58;
     
@@ -454,66 +401,16 @@ float tes_sensor(int trig, int echo, int pos)
   switch(pos)
   {
     case 0:
-//      Serial.println("ini sensor depan");
-//      if (duration > 200 && duration < 450){
-//        jarakCm = jarakCm + 0.25;
-//      } else if (duration >= 680 && duration < 850 ) {
-//        jarakCm = jarakCm - 0.3;
-//      } else if (duration >= 1000 && duration < 1160){
-//        jarakCm = jarakCm - 0.7;
-//      } else if (duration >= 1160){
-//        jarakCm = jarakCm - 0.4;
-//      }
+
     break;
     case 1:
-//      Serial.println("ini sensor belakang");
-//      if (duration > 200 && duration < 360){
-//        jarakCm = jarakCm + 0.4;
-//      } else if (duration >= 360 && duration < 475){
-//        jarakCm = jarakCm + 0.5;        
-//      } else if (duration >= 475 && duration > 600){
-//        jarakCm = jarakCm + 0.6;
-//      } else if (duration >= 600 && duration < 650){
-//        jarakCm = jarakCm + 0.2;
-//      } else if (duration >= 650 && duration < 700){
-//        jarakCm = jarakCm + 0.6;
-//      } else if (duration >= 700 && duration < 1040){
-//        jarakCm = jarakCm + 0.3;
-//      } else if (duration >= 1040){
-//        jarakCm = jarakCm + 0.4;
-//      }
+
     break;
     case 2:
-//      Serial.println("ini sensor kanan");
-//      if (duration > 200 && duration < 490){
-//        jarakCm = jarakCm + 0.3;
-//      } else if (duration >= 530 && duration < 610){
-//        jarakCm = jarakCm - 0.4;
-//      } 
-//      else if (duration >= 700 && duration < 740){
-//        jarakCm = jarakCm + 0.5; 
-//      } else if (duration >= 740 && duration < 950){
-//        jarakCm = jarakCm - 0.25;
-//      } 
-//      else if (duration >= 950 && duration < 1215){
-//        jarakCm = jarakCm + 0.25;
-//      } else if (duration >= 1215){
-//        jarakCm = jarakCm + 0.5;
-//      }
+
     break;
     case 3:
-//      Serial.println("ini sensor kiri");
-//      if (duration > 200 && duration < 430){
-//        jarakCm = jarakCm + 0.3;
-//      } else if (duration >= 430 && duration < 510){
-//        jarakCm = jarakCm - 0.4;
-//      } else if (duration >= 540 && duration < 1100){
-//        jarakCm = jarakCm + 0.6; 
-//      } else if (duration >= 1100 && duration < 1220){
-//        jarakCm = jarakCm - 0.1;
-//      } else if (duration >= 1220){
-//        jarakCm = jarakCm + 0.3;
-//      }
+
     break; 
     default:
 
@@ -523,267 +420,68 @@ float tes_sensor(int trig, int echo, int pos)
   return jarakCm;  
 }
 
-float sensor_baca(int trig, int echo, int mVal, int cVal)
+// function untuk buzzer
+void buzzerScan()
 {
-  float duration; 
-  float jarakCm;
-  float jarakInch; 
+  tempo = 70;
   
-  std::vector<long> durSensor = {};
-
-  for (int i = 0; i < 1; i++)
-  {     
-    // Clears the Trig
-    digitalWrite(trig, LOW);  
-    delayMicroseconds(2);
-  
-    // Sets the Trig in HIGH state for 10 micro seconds
-    digitalWrite(trig, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trig, LOW);
-    
-    // Reads the Echo, returns the sound wave travel time in microseconds
-    duration = pulseIn(echo, HIGH);
-    // duration = duration + kalibrasi;
-
-    durSensor.push_back(duration);    
-    
-    delay(20);
+  for (int i = 0; i < notesLength; i++) {
+    if (notes[i] == ' ') {
+      delay(beats[i] * tempo); // rest
+    } else {
+      playNote(notes[i], beats[i] * tempo);
+    }
+    delay(tempo / 2);
   }
-
-  int durSensorCount = sizeof(durSensor) / sizeof(durSensor[0]);
-  int maxCount = 0;
-  int modeValue; 
-  int nilaiSensor = 0; 
-
-
-  for (int j = 0; j < durSensor.size(); j++ )
-  {
-    nilaiSensor = nilaiSensor + durSensor[j];    
-  }
-  
-
-  Serial.print("duration: ");
-  Serial.println(duration);
-  
-  // Calculate the distance in cm
-   jarakCm = duration * SOUND_SPEED/2;
-  // jarakCm = duration / 58;
-  // kalau 417 = 5 cm , kalau 2580 = 43,5 cm , kalau 1000 berarti 
-  // A = ( B - c ) / m
-  //  jarakCm = ( duration - cVal ) / mVal;
-  
-  // Convert to inches if needed
-  jarakInch = jarakCm * CM_TO_INCH;
-
-  return jarakCm;  
 }
 
-void ukur()
-{
-  int mDepan, cDepan;
-  int mBelakang, cBelakang;
-  int mKanan, cKanan;
-  int mKiri, cKiri;
-  int delaySensor = 50; //stable: 100
+void playNote(char note, int duration) {
+  char names[] = { 'c', 'd', 'e', 'f', 'g', 'a', 'b', 'C' };
+  int tones[] = { 1915, 1700, 1519, 1432, 1275, 1136, 1014, 956 };
 
-//   mDepan = (2524 - 331) / (konstanta - 5);
-//   cDepan = 331 - (mDepan * 5);
-//   mBelakang = (2500 - 295) / (konstanta - 5);
-//   cBelakang = 295 - (mBelakang * 5);
-//   mKanan = (2545 - 296) / (konstanta - 5);
-//   cKanan = 296 - (mKanan * 5);
-//   mKiri = (2531 - 346) / (konstanta - 5);
-//   cKiri = 346 - (mKiri * 5);
-
-   mDepan = (1937 - 348) / (33.5 - 5);
-   cDepan = 348 - (mDepan * 5);
-   mBelakang = (1925 - 346) / (33.5 - 5);
-   cBelakang = 346 - (mBelakang * 5);
-   mKanan = (1929 - 312) / (34 - 5);
-   cKanan = 312 - (mKanan * 5);
-   mKiri = (1966 - 279) / (34 - 5);
-   cKiri = 279 - (mKiri * 5);
-
-  
-  jarakDepan = sensor_baca(depanTrig, depanEcho, mDepan , cDepan ); 
-  jarakDepan = jarakDepan + kaliF;
-  delay(delaySensor);
-  jarakBelakang = sensor_baca(belakangTrig, belakangEcho, mBelakang , cBelakang); 
-  jarakBelakang = jarakBelakang + kaliB;
-  delay(delaySensor);
-  jarakKiri = sensor_baca(kiriTrig, kiriEcho, mKiri , cKiri);
-  jarakKiri = jarakKiri + kaliL;
-  delay(delaySensor);
-  jarakKanan = sensor_baca(kananTrig, kananEcho, mKanan , cKanan); 
-  jarakKanan = jarakKanan + kaliR;
-  delay(delaySensor);
-  
-  //  menampilkan pada terminal
-  Serial.print("      ");
-  Serial.println(jarakDepan, 1);
-  Serial.print(jarakKiri, 1);
-  Serial.print("            ");
-  Serial.println(jarakKanan, 1);
-  Serial.print("      ");
-  Serial.println(jarakBelakang, 1);
-
-
-  // jika ada objek, maka data sensor diolah
-  if (jarakDepan < midKonstanta && jarakBelakang < midKonstanta && jarakKanan < midKonstanta && jarakKiri < midKonstanta)
-  {
-//    lcd.clear();
-//    lcd.setCursor(0,0);
-//    lcd.print("  ...geser...");
-//    lcd.setCursor(0,1);
-//    if ( jarakDepan < jarakBelakang - 1 ) 
-//    {
-//      lcd.print("     ");
-//      lcd.write(0);
-//      lcd.write(0);
-//      lcd.write(0);
-//      lcd.write(0);
-//      lcd.write(0);
-//      lcd.print("     ");
-//    }
-//    else if ( jarakDepan - 1 > jarakBelakang ) 
-//    {
-//      lcd.print("     ");
-//      lcd.write(1);
-//      lcd.write(1);
-//      lcd.write(1);
-//      lcd.write(1);
-//      lcd.write(1);
-//      lcd.print("      ");
-//    } 
-//    else if ( jarakKanan - 1 > jarakKiri )
-//    {
-//      lcd.print("     ");
-//      lcd.write(3);
-//      lcd.write(3);
-//      lcd.write(3);
-//      lcd.write(3);
-//      lcd.write(3);
-//      lcd.print("      ");
-//    }
-//    else if ( jarakKanan < jarakKiri - 1 )
-//    {
-//      lcd.print("     ");
-//      lcd.write(2);
-//      lcd.write(2);
-//      lcd.write(2);
-//      lcd.write(2);
-//      lcd.write(2);
-//      lcd.print("      ");
-//    }
-//    
-//    
-//    // jika 
-//    // sensor depan & sensor belakang selisih di bawah 2 cm, 
-//    // sensor kanan & sensor kiri selisih di bawah 2 cm,
-//    // maka ready ambil data
-//    
-//    float selFB = jarakDepan - jarakBelakang;
-//    float selRL = jarakKanan - jarakKiri;
-//    if ( selFB < 0 ) selFB = selFB * -1;
-//    if ( selRL < 0 ) selRL = selRL * -1;
-//    
-//
-////    if ( selFB < 2 && selRL  < 2 )
-////    { // 483
-//      // olah data dari sensor 
-//      diaFB = 43.21 - ( jarakDepan + jarakBelakang ); // jarak sensor depan ke belakang = 43,21
-//      diaRL = 43,7 - ( jarakKanan + jarakKiri ); // jarak sensor kanan ke kiri = 43,7
-//      rataDia = ( diaFB + diaRL ) / 2;
-////      rataDia = sqrt( 2 * pow(jarakDepan, 2) + 2 * pow(jarakBelakang, 2) + 2 * pow(jarakKanan, 2) + 2 * pow(jarakKiri, 2 ) );
-//
-//
-////     Rumus Lingkar Kepala = π × √(2 × a^2 + 2 × b^2)
-////     lingkaran = phi * sqrt( ( 2 * pow(diaFB, 2) + 2 * pow(diaRL, 2) ) );
-//
-//
-//       lingkaran = phi * rataDia;
-//            
-//      lcd.clear();
-//    
-//      // Prints the distance in the Serial Monitor      
-//      Serial.print("diameter FB: ");
-//      Serial.println(diaFB);
-//      Serial.print("diameter RL: ");
-//      Serial.println(diaRL);
-//      Serial.print("diameter lingkaran: ");
-//      Serial.println(rataDia);
-//      
-//      
-//      Serial.println("===");
-//      Serial.println(lingkaran, 1);
-//      Serial.println("===");
-//
-////    tampilkan data ke LCD
-//      lcd.setCursor(0,0);
-//      lcd.print("D1:");
-//      lcd.print(diaFB, 1);
-//    
-//      lcd.setCursor(9,0);
-//      lcd.print("D2:");
-//      lcd.print(diaRL, 1);
-//    
-//      lcd.setCursor(0,1);
-//      lcd.print("L.Kepala:");
-//      lcd.print(lingkaran, 1);
-//      lcd.print(" cm");
-//
-//      for (byte x = 0; x < 30; x++ ){
-//        bool loopState =  true;
-//        int counterDelay = 0;
-//        
-//        lcd.noBacklight();
-//        cek_client();
-//
-//        
-//       do {
-//          if ( digitalRead(tombolReset) == 1 ) loopState = false;
-//          if ( loopState == false ) break;
-//          delay(1);
-//          counterDelay++;
-//       } while( counterDelay <= 200 );
-//
-//        lcd.backlight();
-//        if ( loopState == false ) break;
-//        
-//        cek_client();
-//        
-//        do {
-//          if ( digitalRead(tombolReset) == 1 ) loopState = false;
-//          if ( loopState == false ) break;
-//          delay(1);
-//          counterDelay++;
-//       } while( counterDelay <= 1000 );
-//       
-//      }      
-//
-//      lcd.clear();
-//      lcd.setCursor(0,0);
-//      lcd.print("  Scanning...");
-//      delay(2000);
-//
-//      //reset nilai hasil pengukuran
-//      diaFB = 0;
-//      diaRL = 0;
-//      rataDia = 0;
-//      lingkaran = 0;
-  //    }    
-  } 
-  else {
-    Serial.println("objek tidak terdeteksi...");    
-
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("  Scanning...");
-    lcd.setCursor(0,1);
-    lcd.print("   No Object  ");
+  for (int i = 0; i < 8; i++) {  
+    if (names[i] == note) {
+     playTone(tones[i], duration);  
+    }
   }
-   
+}
+
+void playTone(int tone, int duration) {
+  for (long i = 0; i < duration * 900L; i += tone * 2) 
+  {
+    digitalWrite(speakerPin, HIGH); 
+    delayMicroseconds(tone);    
+    digitalWrite(speakerPin, LOW);    
+    delayMicroseconds(tone);  
+  }
+}
+
+void buzzerObject()
+{
+  tempo = 70;
+  
+  for (int i = 0; i < notes1Length; i++) {
+    if (notes1[i] == ' ') {
+      delay(beats1[i] * tempo); // rest
+    } else {
+      playNote(notes1[i], beats1[i] * tempo);
+    }
+    delay(tempo / 2);
+  }
+}
+
+void buzzerScanDone()
+{
+  tempo = 300;
+  
+  for (int i = 0; i < notesLength; i++) {
+    if (notes[i] == ' ') {
+      delay(beats[i] * tempo); // rest
+    } else {
+      playNote(notes[i], beats[i] * tempo);
+    }
+    delay(tempo / 2);
+  }
 }
 
 void startup_wifi()
@@ -801,6 +499,8 @@ void startup_wifi()
   lcd.print("  scanning...");  
 }
 
+// menampilkan aplikasi yang diakses pada IP address 192.168.4.1 melalui browser
+// aplikasi berbasis web menggunakan HTML, CSS, dan javascript
 void cek_client()
 {
   byte counterWIFI = 0; 
@@ -813,11 +513,8 @@ void cek_client()
     long counterWhile = 0;
     
     while (client.connected()) {            // loop while the client's connected
-
-      
       if (client.available()) {             // if there's bytes to read from the client,
-        char c = client.read();             // read a byte, then
-//        Serial.write(c);                    // print it out the serial monitor
+        char c = client.read();             // read a byte
         header += c;
 
         if (c == '\n') {                    // if the byte is a newline character          
@@ -852,16 +549,12 @@ void cek_client()
             client.println("Content-type:text/html");
             client.println("Connection: close");
             client.println();                                                      
-
-//            ukur();
                       
             // Display the HTML web page
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
             client.println("<link rel=\"icon\" href=\"data:,\">");
-            client.println("<title>Pengukuran Lingkar Kepala Bayi</title>");
-            // CSS to style the on/off buttons 
-            // Feel free to change the background-color and font-size attributes to fit your preferences
+            client.println("<title>Pengukuran Lingkar Kepala Bayi</title>");    
             client.println("<style>*{padding:0; margin:0;}");
             client.println("html { background-image:linear-gradient(to right, #eee, #ddd); font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
             client.println("h2 {margin: 20px 0 10px 0;}");
@@ -936,7 +629,6 @@ void cek_client()
             client.println("</form>");
             client.println("<hr><footer><p class=\"copyright\"> <i>Alat Pengukur Lingkar Kepala Bayi</i> &copy; 2023</p></footer>");  
             client.println("<script>");
-//            client.println("let waktuReload = 2000;");
             client.println("function pesan(){location.href = \"http://192.168.4.1\";}");            
             client.println("const lingkaran = document.querySelector(\"#lingkaran\");");
             client.println("lingkaran.style.backgroundColor = \"#5dd6e5\"; setTimeout( pesan , 10000 );;");
@@ -960,7 +652,7 @@ void cek_client()
       }  
 
       // ketika terhubung ke aplikasi melalui HP, program terjebak di while loop
-      // counterWhile digunakan agar mengatasi hal tersebut
+      // counterWhile digunakan agar mengatasi hal tersebut      
       counterWhile++;
       if (counterWhile % 1000 == 0) Serial.println(counterWhile);
 
@@ -969,10 +661,7 @@ void cek_client()
         Serial.println("Client disconnected.");        
       }
     }
-
-   
-
-    // Serial.println(header);
+      
     // Clear the header variable
     header = "";
     // Close the connection
@@ -980,18 +669,4 @@ void cek_client()
     Serial.println("Client disconnected.");
     Serial.println("");    
   }
-}
-
-void loop() {     
-  ms_current = millis();
-  cek_client();
-
-  
-  if ( ms_current - ms_previous >= 2000)
-  {      
-    ms_previous = ms_current;
-               
-    tes_ukur();
-
-  }  
 }
